@@ -13,15 +13,22 @@ from urllib.parse import urlparse
 from io import BytesIO
 # To install this module, run:
 # python -m pip install Pillow
-from PIL import Image, ImageDraw
+from PIL import ImageDraw
+import PIL.Image
 from azure.cognitiveservices.vision.face import FaceClient
 from msrest.authentication import CognitiveServicesCredentials
 from azure.cognitiveservices.vision.face.models import TrainingStatusType, Person, QualityForRecognition
 # ZIP file management
 from zipfile import ZipFile
+#TKINTER GUI Window stuff
+from tkinter import *
+from tkinter import ttk, filedialog
+from tkinter.messagebox import showinfo
 
 # IMAGE FILE EXTENSIONS
 img_extensions = ['.jpg','.jpeg','.png','.heif']
+
+# https://www.youtube.com/watch?v=H8-CckgZFzw reference
 
 # Abstracting my KEY and ENDPOINT away from this file :D
 # They are stored in a .gitignore file with the information on seperate lines
@@ -43,39 +50,8 @@ face_client = FaceClient(ENDPOINT, CognitiveServicesCredentials(KEY))
 # PUT IN ANY IMAGE YOU WANT!!!!! IT WORKS
 image_url = 'https://www.business2community.com/wp-content/uploads/2015/10/42454567_m.jpg.jpg'
 
-# Based on EXAMPLE #1
-def detection(img_url):
-    image_name = os.path.basename(img_url)
-
-    response_detected_faces = face_client.face.detect_with_url(
-        image_url, 
-        detection_model='detection_03',
-        recognition_model='recognition_04',
-    )
-    print(response_detected_faces)
-
-    if not response_detected_faces:
-        raise Exception('No face detected')
-
-    print('Number of people detected: {0}' .format(len(response_detected_faces)))
-
-    person1 = response_detected_faces[0]
-    # print(vars(person1))
-    # print(person1.face_rectangle)
-
-    response_image = requests.get(image_url)
-    img = Image.open(io.BytesIO(response_image.content))
-    draw = ImageDraw.Draw(img)
-
-    for face in response_detected_faces:
-        rect = face.face_rectangle
-        left = rect.left
-        top = rect.top
-        right = rect.width + left
-        bottom = rect.height + top
-        draw.rectangle(((left,top),(right,bottom)), outline='blue', width = 5)
-
-    img.show()
+# last used directory - where the .ZIP is selected from
+zip_location = ""
 
 def retrive_images(dir):
     for path in os.listdir(dir):
@@ -83,7 +59,6 @@ def retrive_images(dir):
         imgs_to_check.append(proper_path)
     print(imgs_to_check)
     print('got da images :D')
-
 
 # Who do we want to find
 target_person = 'test_images/Noah#1.jpeg'
@@ -108,6 +83,19 @@ def extract_compare(zip_address):
             
     else:
         print("That Ain't a ZIP buddy")
+
+def zipem(f2z, dir):
+    if not f2z:
+        print('No Files to ZIP')
+        return 
+    else:
+        print(dir + 'matches.zip')
+        zipObj = ZipFile(dir + '/matches.zip', 'w')
+
+        for file in f2z:
+            zipObj.write(file)
+
+        zipObj.close()
 
 # File management at it's finest
 def clear_dir(dir_path):
@@ -153,8 +141,8 @@ def comparison(target_img, compare_img):
     )
 
     # Open the group image / one you want to check if the student is in
-    img = Image.open(open(compared_to, 'rb'))
-    draw = ImageDraw.Draw(img)
+    # img = PIL.Image.open(open(compared_to, 'rb'))
+    # draw = ImageDraw.Draw(img)
 
     #Flag raising for if we find a match
     matched = False
@@ -163,33 +151,128 @@ def comparison(target_img, compare_img):
     for matched_face in matched_face_ids:
         for face in response_detected_faces:
             if face.face_id == matched_face.face_id:
-                rect = face.face_rectangle
-                left = rect.left
-                top = rect.top
-                right = rect.width + left
-                bottom = rect.height + top
-                draw.rectangle(((left, top), (right, bottom)), outline='green', width=5)
+                # rect = face.face_rectangle
+                # left = rect.left
+                # top = rect.top
+                # right = rect.width + left
+                # bottom = rect.height + top
+                # draw.rectangle(((left, top), (right, bottom)), outline='green', width=5)
                 matched = True
     
-    if matched == False:
-        draw.line([(0,0),(img.size[0],img.size[1])],fill='red', width=5)
+    # if matched == False:
+    #     draw.line([(0,0),(img.size[0],img.size[1])],fill='red', width=5)
 
-    img.show()
+    # img.show()
+
+    if matched:
+        return compare_img
 
 # WHERE TO RUN ANY METHODS YOU MAKE :DDD What's in here is what runs
 def main():
     # Getting all files
-    extract_compare('test_images/Group.zip')
-    #now they are in store
+    # extract_compare(tgtzip)
+    # now they are in store
+
+    matches = []
 
     # TO DO: Get them out of store and run 
     retrive_images('store')
     for img in imgs_to_check:
         print(img)
-        comparison(target_person, img)
-   
+        match = comparison(target_person, img)
+        if match: matches.append(match)
+
+    if matches:
+        dirname = filedialog.askdirectory(
+            title='Open a folder',
+            initialdir=os.path.dirname(os.path.realpath(__file__)))
+        print(dirname)
+        zipem(matches, dirname)
+    
     clear_dir('store')
     print('MAIN COMPLETE :D')
 
-if __name__ == "__main__":
-    main()
+root = Tk()
+root.title("Personal Yeerbook")
+
+def select_zip():
+    filetypes = (
+        ('zip files', '*.zip'),
+        ('All files', '*.*')
+    )
+
+    filename = filedialog.askopenfilename(
+        title='Open a file',
+        initialdir=os.path.dirname(os.path.realpath(__file__)),
+        filetypes=filetypes)
+
+    showinfo(
+        title='Selected File',
+        message=filename
+    )
+    extract_compare(filename)
+
+    # Try to get the dir that the file was taken from
+    dir = ""
+    split = filename.split('/')
+    for i in range(0, len(split)-1):
+        dir += split[i] + "/"
+
+    print(filename)
+    print(dir)
+    zip_location = dir
+
+def select_img():
+    filetypes = (
+        ('jpg files', '*.jpg'),
+        ('jpeg files', '*.jpeg'),
+        ('png files', '*.png'),
+        ('heif files', '*.heif'),
+        ('All files', '*.*')
+    )
+
+    filename = filedialog.askopenfilename(
+        title='Open a file',
+        initialdir=os.path.dirname(os.path.realpath(__file__)),
+        filetypes=filetypes)
+
+    showinfo(
+        title='Selected File',
+        message=filename
+    )
+
+    print(filename)
+    target_person = filename
+
+
+# BUTTONS
+zip_button = ttk.Button(
+    root,
+    text='Select target Zip',
+    command=select_zip
+)
+zip_button.pack(expand=True)
+
+tgt_button = ttk.Button(
+    root,
+    text='Select a target person',
+    command=select_img
+)
+tgt_button.pack(expand=True)
+
+comp_button = ttk.Button(
+    root,
+    text='Find target in ZIP',
+    command=main
+)
+comp_button.pack(expand=True)
+
+Button(root, text="Quit", command=root.destroy).pack()
+
+root.mainloop()
+
+# if __name__ == "__main__":
+
+#     main()
+
+# e book for build!!!!
