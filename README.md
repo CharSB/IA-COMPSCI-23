@@ -5,3 +5,5 @@ requiring rigorous documentation and technical planning.
 </br></br>
 The project utilises Microsoft Azure's facial recognition API, to do the facial recognition.
 Utilising many different coding techiques such as file management, abstraction & GUI. 
+</br></br>
+The final application is under the FULLY-FUNTIONAL branch, in the test.py document
