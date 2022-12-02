@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 from io import BytesIO
 # To install this module, run:
 # python -m pip install Pillow
-from PIL import ImageDraw
+from PIL import ImageDraw, ImageTk
 import PIL.Image
 from azure.cognitiveservices.vision.face import FaceClient
 from msrest.authentication import CognitiveServicesCredentials
@@ -25,8 +25,10 @@ from tkinter import *
 from tkinter import ttk, filedialog
 from tkinter.messagebox import showinfo
 
+import typing
+
 # IMAGE FILE EXTENSIONS
-img_extensions = ['.jpg','.jpeg','.png','.heif']
+img_extensions = ['.jpg','.jpeg','.png','.bmp']
 
 # https://www.youtube.com/watch?v=H8-CckgZFzw reference
 
@@ -57,13 +59,19 @@ def retrive_images(dir):
     for path in os.listdir(dir):
         proper_path = dir + '/' + path
         imgs_to_check.append(proper_path)
-    print(imgs_to_check)
-    print('got da images :D')
+    # Used to debug and confirm all files are retrieved
+    # print(imgs_to_check)
+    # print('got da images :D')
 
 # Who do we want to find
 target_person = 'test_images/Noah#1.jpeg'
 # What images do we want to check
 imgs_to_check = []
+# Matched images of the target
+matches = []
+
+A4 = (3508,2480)
+MIN_SIZE = (863,308)
 
 # Taking out all of the image files
 def extract_compare(zip_address):
@@ -79,7 +87,7 @@ def extract_compare(zip_address):
                 file_name, file_extension = os.path.splitext(file)
                 if(file_extension in img_extensions):
                     imgs.append(file)
-                    zip.extract(file,path='store') # We store all the images in a temporary space called store
+                    zip.extract(file,path='store/storage') # We store all the images in a temporary space called store
             
     else:
         print("That Ain't a ZIP buddy")
@@ -165,35 +173,38 @@ def comparison(target_img, compare_img):
     # img.show()
 
     if matched:
+        update_text(tgt_status, "MATCHES FOUND")
         return compare_img
 
+
 # WHERE TO RUN ANY METHODS YOU MAKE :DDD What's in here is what runs
-def main():
+def find_matches():
     # Getting all files
     # extract_compare(tgtzip)
     # now they are in store
-
-    matches = []
-
+    
     # TO DO: Get them out of store and run 
-    retrive_images('store')
+    update_text(tgt_status, "FINDING MATCHES")
+    retrive_images('store/storage')
     for img in imgs_to_check:
         print(img)
         match = comparison(target_person, img)
         if match: matches.append(match)
 
+
+def download_matches():
     if matches:
-        dirname = filedialog.askdirectory(
-            title='Open a folder',
-            initialdir=os.path.dirname(os.path.realpath(__file__)))
-        print(dirname)
-        zipem(matches, dirname)
+            dirname = filedialog.askdirectory(
+                title='Open a folder',
+                initialdir=os.path.dirname(os.path.realpath(__file__)))
+            print(dirname)
+            zipem(matches, dirname)
+            update_text(download_status, "DOWNLOADED")
     
-    clear_dir('store')
-    print('MAIN COMPLETE :D')
 
 root = Tk()
 root.title("Personal Yeerbook")
+root.minsize(width=MIN_SIZE[0], height=MIN_SIZE[1])
 
 def select_zip():
     filetypes = (
@@ -206,10 +217,11 @@ def select_zip():
         initialdir=os.path.dirname(os.path.realpath(__file__)),
         filetypes=filetypes)
 
-    showinfo(
-        title='Selected File',
-        message=filename
-    )
+    # Used to confirm what file you have selected
+    # showinfo(
+    #     title='Selected File',
+    #     message=filename
+    # )
     extract_compare(filename)
 
     # Try to get the dir that the file was taken from
@@ -221,8 +233,12 @@ def select_zip():
     print(filename)
     print(dir)
     zip_location = dir
+    if filename:
+        update_text(zip_status, filename)
 
 def select_img():
+    print(root.winfo_width())
+    print(root.winfo_height())
     filetypes = (
         ('jpg files', '*.jpg'),
         ('jpeg files', '*.jpeg'),
@@ -236,43 +252,183 @@ def select_img():
         initialdir=os.path.dirname(os.path.realpath(__file__)),
         filetypes=filetypes)
 
-    showinfo(
-        title='Selected File',
-        message=filename
-    )
+    # Used to confirm what file you have selected
+    # showinfo(
+    #     title='Selected File',
+    #     message=filename
+    # )
 
     print(filename)
     target_person = filename
+    update_target(filename, target_placeholder, (750,750))
+    update_text(tgt_button, "Change Target Person")
+
+def update_target(img_path, place:Label, size:tuple):
+    img = PIL.Image.open(img_path)
+    img.thumbnail(size)
+    imgtk=ImageTk.PhotoImage(img)
+    place.configure(image=imgtk)
+    place.image=imgtk
+
+def update_text(label: typing.Union[Label, ttk.Button], text):
+    label.configure(text=text)
+    label.text=text
+
+def swap_frame(close:Frame, open:Frame):
+    close.grid_forget()
+    open.grid(row=0, column=0, padx=5, pady=5)
+
+def generate_template():
+    swap_frame(default_frame, template_frame)
+    default_frame.grid_forget()
+    return "do it yourself"
+
+def quit():
+    clear_dir('store/storage')
+    root.destroy()
+
+ 
+# Specify Grid
+Grid.rowconfigure(root,0,weight=1)
+Grid.columnconfigure(root,0,weight=1)
 
 
-# BUTTONS
+
+# DEFAULT GUI 
+    #region FRAMES
+default_frame = LabelFrame(root, padx=5, pady=5)
+default_frame.grid(row=0, column=0, padx=5, pady=5, sticky="ESWN")
+
+Grid.rowconfigure(default_frame,0,weight=1)
+Grid.columnconfigure(default_frame,0,weight=1)
+
+b_frame1 = LabelFrame(default_frame, padx=20, pady=10)
+b_frame1.grid(row=0, column=1, columnspan=3, padx=10, pady=10, sticky="ESWN")
+
+tgt_frame1 = LabelFrame(default_frame, padx=20, pady=10)
+tgt_frame1.grid(row=0, column=0, padx=10, pady=10, sticky="ESWN")
+
+Grid.rowconfigure(b_frame1,0,weight=1)
+Grid.columnconfigure(b_frame1,0,weight=1)
+
+Grid.rowconfigure(tgt_frame1,0,weight=1)
+Grid.columnconfigure(tgt_frame1,0,weight=1)
+    #endregion
+
+    #region IMAGES / STATUS
+target_placeholder = Label(tgt_frame1, text="[ TARGET PERSON ]")
+target_placeholder.grid(row=0, column=0, padx=10, pady=10)
+
+zip_status = Label(b_frame1, text="[ ZIP FILE ]")
+zip_status.grid(row=0, column=1, padx=10, pady=10)
+
+tgt_status = Label(b_frame1, text="[ TARGET NOT FOUND ]")
+tgt_status.grid(row=2, column=1, padx=10, pady=10)
+
+download_status = Label(b_frame1, text="[ ... ]")
+download_status.grid(row=3, column=1, padx=10, pady=10)
+    #endregion
+
+    #region  BUTTONS
+tgt_button = ttk.Button(
+    tgt_frame1,
+    text='Select a Target Person',
+    command=select_img
+)
+tgt_button.grid(row=1, column=0, padx= 50, pady= 10)
+
 zip_button = ttk.Button(
-    root,
+    b_frame1,
     text='Select target Zip',
     command=select_zip
 )
-zip_button.pack(expand=True)
-
-tgt_button = ttk.Button(
-    root,
-    text='Select a target person',
-    command=select_img
-)
-tgt_button.pack(expand=True)
+zip_button.grid(row=0, column=0, padx= 50, pady= 10)
 
 comp_button = ttk.Button(
-    root,
+    b_frame1,
     text='Find target in ZIP',
-    command=main
+    command=find_matches
 )
-comp_button.pack(expand=True)
+comp_button.grid(row=2, column=0, padx= 50, pady= 10)
 
-Button(root, text="Quit", command=root.destroy).pack()
+download_button = ttk.Button(
+    b_frame1,
+    text='Download Matches',
+    command=download_matches
+)
+download_button.grid(row=3, column=0, padx= 50, pady= 10)
 
+generate_temp_button = ttk.Button(
+    b_frame1,
+    text='Generate Template',
+    command=generate_template
+)
+generate_temp_button.grid(row=4, column=0, padx= 50, pady= 10)
+
+quit_button = Button(b_frame1, text="Quit", command=quit)
+quit_button.grid(row=5, column=0, padx= 50, pady= 10)
+
+
+    #endregion
+
+#TEMPLATE GUI
+    #region Frames
+template_frame = LabelFrame(root, padx=5, pady=5)
+template_frame.grid(row=0, column=0, padx=5, pady=5, sticky="ESWN")
+
+Grid.rowconfigure(template_frame,0,weight=1)
+Grid.columnconfigure(template_frame,0,weight=1)
+
+layout_frame = LabelFrame(template_frame, padx=5, pady=5)
+layout_frame.grid(row=0, column=0, padx=5, pady=5)
+
+selection_frame = LabelFrame(template_frame, padx=5, pady=5)
+selection_frame.grid(row=0, column=1, padx=5, pady=5)
+
+img_frame = LabelFrame(selection_frame, padx=5, pady=5)
+img_frame.grid(row=0, column=0, padx=5, pady=5)
+
+btn_frame = LabelFrame(selection_frame, padx=5, pady=5)
+btn_frame.grid(row=1, column=0, padx=5, pady=5)
+    #endregion
+
+#region IMAGES / STATUS
+    #Images
+img1 = Label(img_frame, text="[ ... ]")
+img1.grid(row=0, column=0, padx=10, pady=10)
+img2 = Label(img_frame, text="[ ... ]")
+img2.grid(row=0, column=1, padx=10, pady=10)
+img3 = Label(img_frame, text="[ ... ]")
+img3.grid(row=0, column=2, padx=10, pady=10)
+
+img4 = Label(img_frame, text="[ ... ]")
+img4.grid(row=1, column=0, padx=10, pady=10)
+img5 = Label(img_frame, text="[ ... ]")
+img5.grid(row=1, column=1, padx=10, pady=10)
+img6 = Label(img_frame, text="[ ... ]")
+img6.grid(row=1, column=2, padx=10, pady=10)
+
+img7 = Label(img_frame, text="[ ... ]")
+img7.grid(row=2, column=0, padx=10, pady=10)
+img8 = Label(img_frame, text="[ ... ]")
+img8.grid(row=2, column=1, padx=10, pady=10)
+img9 = Label(img_frame, text="[ ... ]")
+img9.grid(row=2, column=2, padx=10, pady=10)
+    #Template
+template = Label(layout_frame, text="[ ... ]")
+template.grid(row=0, column=0, padx=10, pady=10)
+#endregion
+
+    #region  BUTTONS
+back_button = ttk.Button(
+    btn_frame,
+    text='Back',
+    command=lambda: swap_frame(template_frame, default_frame)
+)
+back_button.grid(row=0, column=0, columnspan = 3,padx= 50, pady= 10)
+    #endregion
+
+swap_frame(template_frame, default_frame)
 root.mainloop()
-
-# if __name__ == "__main__":
-
-#     main()
 
 # e book for build!!!!

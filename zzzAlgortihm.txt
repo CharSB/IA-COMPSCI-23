@@ -1,0 +1,49 @@
+if (Select Target[button] is chosen){
+    choose file
+    if(file is .jpg, .jpeg, .png, .gif, .bmp){
+        then save the photo in the program as target person
+    }
+    else{
+        return an error that an invalid file type was inputed 
+    }
+}
+else if (Select Zip[button] is chosen){
+    choose file
+    if(file is .zip){
+        for every image file in the zip:
+            if (file is .jpg, .jpeg, .png, .gif, .bmp){
+                save file to check later
+            }
+    }
+    else{
+        return an error that an invalid file type was inputed 
+    }
+}
+else if (Find Target[button] is chosen){
+    get photos that need to be compared
+    for image that we need to check:
+        generate faceIDs for all faces we need to check in image
+        generate faceID for tarfet person
+        find similar faceIDs to constitute a match
+        if(we have a match){
+            return the compared image in matches[]
+        }
+    
+    if(matches[] isn't empty){
+        zip the file in location of choice
+    }
+}
+else if(Generate Template[button] is chosen){
+    retrieve number of images found
+    retrieve sizes of images
+    if(length > width){
+        put image in landscape category
+    } else {
+        put image in vertical category
+    }
+    basd on the parameters found, suggest a layout as pdf or png
+}
+else if(Quit[button] is chosen){
+    quit app 
+    remove any data that may be stored
+}
