@@ -1,6 +1,12 @@
 # IA-COMPSCI-23
 
-This project was completed as part of my IB Computer Science course, my coursework piece.
-I created a software to be used by my schools marketing team, in order to create a more personalised yearbook.
-This was done by using facial recognition to find a student in a large directory of photos.
-The main file for this program is test.py :D 
+I created a desktop application to find target students in the database of school photos;
+the app is designed for the school marketing department to create customised yearbooks for students, 
+requiring rigorous documentation and technical planning.
+</br></br>
+The project utilises Microsoft Azure's facial recognition API, to do the facial recognition.
+Utilising many different coding techiques such as file management, abstraction & GUI. 
+</br></br>
+The final application is under the FULLY-FUNTIONAL branch, in the test.py document
+
+
