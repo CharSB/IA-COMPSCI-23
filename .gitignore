@@ -1,4 +1,10 @@
 test_images
 API.txt
-dist
+dist.zip
 build/tktest
+Notes
+tktest.py
+tktest.spec
+store/storage
+GUI
+dist/tktest
