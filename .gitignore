@@ -8,3 +8,7 @@ tktest.spec
 store/storage
 GUI
 dist/tktest
+*.jpeg
+*.jpg
+*.png
+*.bmp
